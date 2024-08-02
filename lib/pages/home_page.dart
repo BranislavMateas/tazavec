@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:groq_sdk/groq_sdk.dart';
 import 'package:loggy/loggy.dart';
 import 'package:tazavec/main.dart';
+import 'package:tazavec/prompts.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -13,12 +14,17 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> with UiLoggy {
-  String questionText = "";
+  String questionText = "Hey! I am Tazavec! Ready to get each other deeper?";
+  bool isFirst = true;
   double currSliderValue = 3;
 
   late Groq groqModel;
+  late GroqChat groqChat;
 
   final TextEditingController _controller = TextEditingController();
+  final Prompts prompts = Prompts();
+
+  FocusNode? focusNode;
 
   @override
   void initState() {
@@ -29,8 +35,34 @@ class _HomePageState extends State<HomePage> with UiLoggy {
     }
 
     groqModel = Groq(apiKey);
+    groqChat = groqModel.startNewChat(GroqModels.llama3_8b);
+
+    groqChat.stream.listen((event) {
+      event.when(request: (requestEvent) {
+        loggy.info('Request sent...');
+        loggy.info(requestEvent.message.content);
+      }, response: (responseEvent) async {
+        loggy.info('Received response: ${responseEvent.response.choices.first.message}');
+
+        for (String word in responseEvent.response.choices.first.message.split(' ')) {
+          await Future.delayed(const Duration(milliseconds: 100), () {
+            setState(() {
+              questionText += "$word ";
+            });
+          });
+        }
+      });
+    });
+
+    focusNode = FocusNode();
 
     super.initState();
+  }
+
+  @override
+  void dispose() {
+    focusNode?.dispose();
+    super.dispose();
   }
   
   @override
@@ -100,6 +132,7 @@ class _HomePageState extends State<HomePage> with UiLoggy {
               ),
               const SizedBox(height: 16),
               TextField(
+                focusNode: focusNode,
                 style: const TextStyle(
                   fontSize: 14,
                 ),
@@ -128,39 +161,15 @@ class _HomePageState extends State<HomePage> with UiLoggy {
                           questionText = "";
                         });
 
-                        final chat = groqModel.startNewChat(GroqModels.llama3_8b);
+                        focusNode?.unfocus();
 
-                        chat.stream.listen((event) {
-                          event.when(request: (requestEvent) {
-                            loggy.info('Request sent...');
-                            loggy.info(requestEvent.message.content);
-                          }, response: (responseEvent) async {
-                            loggy.info('Received response: ${responseEvent.response.choices.first.message}');
-
-                            for (String word in responseEvent.response.choices.first.message.split(' ')) {
-                              await Future.delayed(const Duration(milliseconds: 100), () {
-                                setState(() {
-                                  questionText += "$word ";
-                                });
-                              });
-                            }
-                          });
-                        });
-
-                        final (response, usage) = await chat.sendMessage(
-                          "Context: \nTazavec is an app designed to help users get to know their friends,"
-                              "potential partners, or acquaintances better. It is supposed to create ice-breakers "
-                              "between the two people or more by generating questions."
-                              "that users can ask the other person. The questions vary in depth from 1 to 5,"
-                              "with 1 being almost shallow and 5 being the deepest. Users can also specify a "
-                              "topic or occasion for the questions using an optional text field.\n\n"
-                              "Generate the question now. Return only a question itself.\n"
-                              "Depth level for this question: ${currSliderValue.toInt()}\n"
-                              "Occasion or topic for this question: ${_controller.value.text}\n\n"
-                              "Usage Notes: \nIf no topic is specified, generate general questions appropriate for the specified depth.\n"
-                              "Ensure that the questions are respectful and appropriate for the context provided.\n"
-                              "Return only a question without any other text. Try to keep it short.",
+                        final (response, usage) = await groqChat.sendMessage(
+                          isFirst
+                              ? prompts.getInitialPrompt(currSliderValue.toInt(), _controller.value.text)
+                              : prompts.getNewQuestionPrompt(currSliderValue.toInt(), _controller.value.text),
                         );
+
+                        isFirst = false;
                       },
                       child: Padding(
                         padding: const EdgeInsets.all(12.0),
