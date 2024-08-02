@@ -37,17 +37,15 @@ class _HomePageState extends State<HomePage> with UiLoggy {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        toolbarHeight: 65,
         backgroundColor: Colors.white,
         centerTitle: true,
-        title: Padding(
-          padding: const EdgeInsets.only(top: 24.0),
-          child: Text(
-            appTitle.toUpperCase(),
-            style: TextStyle(
-              fontSize: 32,
-              fontWeight: FontWeight.w900,
-              color: Theme.of(context).colorScheme.primary,
-            ),
+        title: Text(
+          appTitle.toUpperCase(),
+          style: TextStyle(
+            fontSize: 32,
+            fontWeight: FontWeight.w900,
+            color: Theme.of(context).colorScheme.primary,
           ),
         ),
       ),
