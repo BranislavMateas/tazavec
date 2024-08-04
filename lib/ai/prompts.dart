@@ -4,7 +4,7 @@ class Prompts {
   String getInitialPrompt(int currSliderValue, String occasion) {
     return "Context: \nTazavec is an app designed to help users get to know their friends,"
         "potential partners, or acquaintances better. It is supposed to create ice-breakers "
-        "between the two people or more by generating questions."
+        "between the two people or more by generating questions "
         "that users can ask the other person. The questions vary in depth from 1 to 5,"
         "with 1 being almost shallow and 5 being the deepest. Users can also specify a "
         "topic or occasion for the questions using an optional text field.\n\n"
