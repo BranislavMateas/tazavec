@@ -3,8 +3,9 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:groq_sdk/groq_sdk.dart';
 import 'package:loggy/loggy.dart';
+import 'package:tazavec/ai/models.dart';
 import 'package:tazavec/main.dart';
-import 'package:tazavec/prompts.dart';
+import 'package:tazavec/ai/prompts.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -14,8 +15,13 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> with UiLoggy {
-  String questionText = "Hey! I am Tazavec! Ready to get each other deeper?";
+  String questionText = "";
+
+  late String targetModel;
+
   bool isFirst = true;
+
+  int buttonPressedCounter = 0;
   double currSliderValue = 3;
 
   late Groq groqModel;
@@ -24,51 +30,103 @@ class _HomePageState extends State<HomePage> with UiLoggy {
   final TextEditingController _controller = TextEditingController();
   final Prompts prompts = Prompts();
 
-  FocusNode? focusNode;
+  final FocusNode focusNode = FocusNode();
 
   @override
   void initState() {
-    String apiKey = const String.fromEnvironment('API_KEY');
+    super.initState();
+    _initializeGroq();
+    _createInitialAnimation();
+  }
+
+  void _initializeGroq() async {
+    const apiKey = String.fromEnvironment('API_KEY');
     if (apiKey.isEmpty) {
       loggy.error("Failed to load API KEY!");
       exit(1);
     }
 
     groqModel = Groq(apiKey);
-    groqChat = groqModel.startNewChat(GroqModels.llama3_8b);
+
+    for (String model in groqModels) {
+      if (await groqModel.canUseModel(model)) {
+        availableModels.add(model);
+
+        if (availableModels.length == 1) {
+          targetModel = model;
+          groqChat = groqModel.startNewChat(targetModel);
+        }
+      }
+    }
 
     groqChat.stream.listen((event) {
-      event.when(request: (requestEvent) {
-        loggy.info('Request sent...');
-        loggy.info(requestEvent.message.content);
-      }, response: (responseEvent) async {
-        loggy.info('Received response: ${responseEvent.response.choices.first.message}');
+      event.when(
+        request: (requestEvent) {
+          loggy.info('Request sent...');
+          loggy.info(requestEvent.message.content);
+        },
+        response: (responseEvent) async {
+          loggy.info('Received response: ${responseEvent.response.choices.first.message}');
 
-        for (String word in responseEvent.response.choices.first.message.split(' ')) {
-          await Future.delayed(const Duration(milliseconds: 100), () {
-            setState(() {
-              questionText += "$word ";
+          final words = responseEvent.response.choices.first.message.split(' ');
+          for (final word in words) {
+            await Future.delayed(const Duration(milliseconds: 100), () {
+              setState(() {
+                questionText += "$word ";
+              });
             });
-          });
-        }
-      });
+          }
+        },
+      );
     });
+  }
 
-    focusNode = FocusNode();
+  void _createInitialAnimation() async {
+    WidgetsBinding.instance.addPostFrameCallback((_) async{
+      String targetMessage = "Hey! I am Tazavec! Ready to get each other deeper?";
+      List<String> words = targetMessage.split(' ');
 
-    super.initState();
+      for (final word in words) {
+        await Future.delayed(const Duration(milliseconds: 100), () {
+          setState(() {
+            questionText += "$word ";
+          });
+        });
+      }
+    });
   }
 
   @override
   void dispose() {
-    focusNode?.dispose();
+    focusNode.dispose();
     super.dispose();
   }
-  
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        actions: [
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert),
+            tooltip: "Change LLM",
+            onSelected: (String value) {
+              setState(() {
+                targetModel = value;
+              });
+
+              groqChat.switchModel(value);
+            },
+            itemBuilder: (BuildContext context) {
+              return availableModels.map((String model) {
+                return PopupMenuItem<String>(
+                  value: model,
+                  child: Text(model),
+                );
+              }).toList();
+            },
+          ),
+        ],
         toolbarHeight: 65,
         backgroundColor: Colors.white,
         centerTitle: true,
@@ -105,91 +163,110 @@ class _HomePageState extends State<HomePage> with UiLoggy {
                 ),
               ),
               const SizedBox(height: 32),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    "Select the DEEPNESS level:".toUpperCase(),
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Theme.of(context).colorScheme.secondary,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  Slider(
-                    min: 1,
-                    max: 5,
-                    value: currSliderValue,
-                    divisions: 4,
-                    label: currSliderValue.toInt().toString(),
-                    onChanged: (value) {
-                      setState(() {
-                        currSliderValue = value;
-                      });
-                    },
-                  ),
-                ],
-              ),
+              _buildSlider(context),
               const SizedBox(height: 16),
-              TextField(
-                focusNode: focusNode,
-                style: const TextStyle(
-                  fontSize: 14,
-                ),
-                decoration: const InputDecoration(
-                  contentPadding: EdgeInsets.only(left: 20),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.all(Radius.circular(50)),
-                  ),
-                  hintText: "Enter topic or occasion... (Optional)",
-                  hintStyle: TextStyle(
-                    fontSize: 14,
-                  ),
-                ),
-                controller: _controller,
-              ),
+              _buildTextField(),
               const SizedBox(height: 64),
-              Row(
-                children: [
-                  Expanded(
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Theme.of(context).colorScheme.primary,
-                      ),
-                      onPressed: () async {
-                        setState(() {
-                          questionText = "";
-                        });
-
-                        focusNode?.unfocus();
-
-                        final (response, usage) = await groqChat.sendMessage(
-                          isFirst
-                              ? prompts.getInitialPrompt(currSliderValue.toInt(), _controller.value.text)
-                              : prompts.getNewQuestionPrompt(currSliderValue.toInt(), _controller.value.text),
-                        );
-
-                        isFirst = false;
-                      },
-                      child: Padding(
-                        padding: const EdgeInsets.all(12.0),
-                        child: Text(
-                          "GENERATE",
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: Theme.of(context).colorScheme.onPrimary,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              )
+              _buildGenerateButton(context),
             ],
           ),
         ),
       ),
     );
+  }
+
+  Widget _buildSlider(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          "Select the DEEPNESS level:".toUpperCase(),
+          style: TextStyle(
+            fontSize: 14,
+            color: Theme.of(context).colorScheme.secondary,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        Slider(
+          min: 1,
+          max: 5,
+          value: currSliderValue,
+          divisions: 4,
+          label: currSliderValue.toInt().toString(),
+          onChanged: (value) {
+            setState(() {
+              currSliderValue = value;
+            });
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTextField() {
+    return TextField(
+      focusNode: focusNode,
+      style: const TextStyle(
+        fontSize: 14,
+      ),
+      decoration: const InputDecoration(
+        contentPadding: EdgeInsets.only(left: 20),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.all(Radius.circular(50)),
+        ),
+        hintText: "Enter topic or occasion... (Optional)",
+        hintStyle: TextStyle(
+          fontSize: 14,
+        ),
+      ),
+      controller: _controller,
+    );
+  }
+
+  Widget _buildGenerateButton(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.primary,
+            ),
+            onPressed: _onGenerateButtonPressed,
+            child: Padding(
+              padding: const EdgeInsets.all(12.0),
+              child: Text(
+                "GENERATE",
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).colorScheme.onPrimary,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _onGenerateButtonPressed() async {
+    if ((buttonPressedCounter % 5) == 4) {
+      // InterstitialAdState().loadAd();
+    }
+    buttonPressedCounter++;
+
+    setState(() {
+      questionText = "";
+    });
+
+    focusNode.unfocus();
+
+    final prompt = isFirst
+        ? prompts.getInitialPrompt(currSliderValue.toInt(), _controller.value.text)
+        : prompts.getNewQuestionPrompt(currSliderValue.toInt(), _controller.value.text);
+
+    final (response, usage) = await groqChat.sendMessage(prompt);
+
+    isFirst = false;
   }
 }
