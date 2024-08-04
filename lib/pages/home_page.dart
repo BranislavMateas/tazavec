@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:groq_sdk/groq_sdk.dart';
 import 'package:loggy/loggy.dart';
+import 'package:tazavec/ads/interstitial_ad_service.dart';
 import 'package:tazavec/ai/models.dart';
 import 'package:tazavec/main.dart';
 import 'package:tazavec/ai/prompts.dart';
@@ -15,22 +16,24 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> with UiLoggy {
-  String questionText = "";
-
   late String targetModel;
-
-  bool isFirst = true;
-
-  int buttonPressedCounter = 0;
-  double currSliderValue = 3;
 
   late Groq groqModel;
   late GroqChat groqChat;
 
-  final TextEditingController _controller = TextEditingController();
   final Prompts prompts = Prompts();
 
+  String questionText = "";
+
+  double currSliderValue = 3;
+
+  final TextEditingController _controller = TextEditingController();
   final FocusNode focusNode = FocusNode();
+
+  int buttonPressedCounter = 0;
+  bool isFirst = true;
+
+  InterstitialAdService adService = InterstitialAdService();
 
   @override
   void initState() {
@@ -55,6 +58,7 @@ class _HomePageState extends State<HomePage> with UiLoggy {
         if (availableModels.length == 1) {
           targetModel = model;
           groqChat = groqModel.startNewChat(targetModel);
+          loggy.info("Starting new chat with model: $targetModel");
         }
       }
     }
@@ -104,71 +108,75 @@ class _HomePageState extends State<HomePage> with UiLoggy {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        actions: [
-          PopupMenuButton<String>(
-            icon: const Icon(Icons.more_vert),
-            tooltip: "Change LLM",
-            onSelected: (String value) {
-              setState(() {
-                targetModel = value;
-              });
+    return SafeArea(
+      top: false,
+      child: Scaffold(
+        appBar: AppBar(
+          actions: [
+            PopupMenuButton<String>(
+              icon: const Icon(Icons.more_vert),
+              tooltip: "Change Target Model",
+              onSelected: (String value) {
+                setState(() {
+                  targetModel = value;
+                });
 
-              groqChat.switchModel(value);
-            },
-            itemBuilder: (BuildContext context) {
-              return availableModels.map((String model) {
-                return PopupMenuItem<String>(
-                  value: model,
-                  child: Text(model),
-                );
-              }).toList();
-            },
-          ),
-        ],
-        toolbarHeight: 65,
-        backgroundColor: Colors.white,
-        centerTitle: true,
-        title: Text(
-          appTitle.toUpperCase(),
-          style: TextStyle(
-            fontSize: 32,
-            fontWeight: FontWeight.w900,
-            color: Theme.of(context).colorScheme.primary,
+                groqChat.switchModel(value);
+                loggy.info("Switching chat model: $targetModel");
+              },
+              itemBuilder: (BuildContext context) {
+                return availableModels.map((String model) {
+                  return PopupMenuItem<String>(
+                    value: model,
+                    child: Text(model),
+                  );
+                }).toList();
+              },
+            ),
+          ],
+          toolbarHeight: 65,
+          backgroundColor: Colors.white,
+          centerTitle: true,
+          title: Text(
+            appTitle.toUpperCase(),
+            style: TextStyle(
+              fontSize: 32,
+              fontWeight: FontWeight.w900,
+              color: Theme.of(context).colorScheme.primary,
+            ),
           ),
         ),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Center(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: <Widget>[
-              Expanded(
-                child: SingleChildScrollView(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Text(
-                      questionText,
-                      textAlign: TextAlign.left,
-                      style: TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.w900,
-                        color: Theme.of(context).colorScheme.onSurface,
+        body: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Center(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: <Widget>[
+                Expanded(
+                  child: SingleChildScrollView(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Text(
+                        questionText,
+                        textAlign: TextAlign.left,
+                        style: TextStyle(
+                          fontSize: 28,
+                          fontWeight: FontWeight.w900,
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
                       ),
                     ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 32),
-              _buildSlider(context),
-              const SizedBox(height: 16),
-              _buildTextField(),
-              const SizedBox(height: 64),
-              _buildGenerateButton(context),
-            ],
+                const SizedBox(height: 32),
+                _buildSlider(context),
+                const SizedBox(height: 16),
+                _buildTextField(),
+                const SizedBox(height: 64),
+                _buildGenerateButton(context),
+              ],
+            ),
           ),
         ),
       ),
@@ -251,7 +259,7 @@ class _HomePageState extends State<HomePage> with UiLoggy {
 
   Future<void> _onGenerateButtonPressed() async {
     if ((buttonPressedCounter % 5) == 4) {
-      // InterstitialAdState().loadAd();
+      adService.loadAd();
     }
     buttonPressedCounter++;
 
