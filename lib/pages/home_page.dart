@@ -273,7 +273,7 @@ class _HomePageState extends State<HomePage> with UiLoggy {
         ? prompts.getInitialPrompt(currSliderValue.toInt(), _controller.value.text)
         : prompts.getNewQuestionPrompt(currSliderValue.toInt(), _controller.value.text);
 
-    final (response, usage) = await groqChat.sendMessage(prompt);
+    await groqChat.sendMessage(prompt);
 
     isFirst = false;
   }
