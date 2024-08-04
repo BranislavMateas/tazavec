@@ -1,4 +1,4 @@
-package com.example.tazavec
+package dev.braniq.tazavec
 
 import io.flutter.embedding.android.FlutterActivity
 
