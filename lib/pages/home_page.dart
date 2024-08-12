@@ -64,6 +64,10 @@ class _HomePageState extends State<HomePage> with UiLoggy {
       }
     }
 
+    _startGroqStream();
+  }
+
+  void _startGroqStream() {
     groqChat.stream.listen((event) {
       event.when(
         request: (requestEvent) {
@@ -72,7 +76,7 @@ class _HomePageState extends State<HomePage> with UiLoggy {
         },
         response: (responseEvent) async {
           loggy.info('Received response: ${responseEvent.response.choices.first.message}');
-
+    
           final words = responseEvent.response.choices.first.message.split(' ');
           for (final word in words) {
             await Future.delayed(const Duration(milliseconds: 100), () {
@@ -118,13 +122,40 @@ class _HomePageState extends State<HomePage> with UiLoggy {
               icon: const Icon(Icons.more_vert),
               tooltip: "Change Target Model",
               onSelected: (String value) {
-                setState(() {
-                  targetModel = value;
-                });
+                showDialog(
+                  context: context,
+                  builder: (c) {
+                    return AlertDialog(
+                      title: const Text("Are you sure you want to change the model?"),
+                      content: Text(
+                        "New model: $value\n\nNote: Changing the model will restart the chat - some of the question may therefore repeat.",
+                      ),
+                      actions: [
+                        TextButton(
+                          child: const Text("No"),
+                          onPressed: () {
+                            Navigator.of(c).pop();
+                          },
+                        ),
+                        TextButton(
+                          child: const Text("Yes"),
+                          onPressed: () {
+                            setState(() {
+                              targetModel = value;
+                            });
 
-                groqChat.switchModel(value);
-                isFirst = true;
-                loggy.info("Switching chat model: $targetModel");
+                            groqChat = groqModel.startNewChat(targetModel);
+                            _startGroqStream();
+                            isFirst = true;
+
+                            loggy.info("Switching chat model: $targetModel");
+                            Navigator.of(c).pop();
+                          },
+                        ),
+                      ],
+                    );
+                  },
+                );
               },
               itemBuilder: (BuildContext context) {
                 return availableModels.map((String model) {
@@ -228,7 +259,7 @@ class _HomePageState extends State<HomePage> with UiLoggy {
         fontSize: 14,
       ),
       decoration: const InputDecoration(
-        contentPadding: EdgeInsets.only(left: 20),
+        contentPadding: EdgeInsets.symmetric(horizontal: 20),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.all(Radius.circular(50)),
         ),
