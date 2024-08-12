@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:groq_sdk/groq_sdk.dart';
+import 'package:internet_connection_checker/internet_connection_checker.dart';
 import 'package:loggy/loggy.dart';
 import 'package:tazavec/ads/interstitial_ad_service.dart';
 import 'package:tazavec/ai/models.dart';
@@ -265,6 +266,15 @@ class _HomePageState extends State<HomePage> with UiLoggy {
   }
 
   Future<void> _onGenerateButtonPressed() async {
+    bool hasConnection = await InternetConnectionChecker().hasConnection;
+    if (!hasConnection && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("No internet connection!")),
+      );
+
+      return;
+    }
+
     if ((buttonPressedCounter % 5) == 4) {
       adService.loadAd();
     }

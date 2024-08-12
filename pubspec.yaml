@@ -16,6 +16,7 @@ dependencies:
   groq_sdk: ^0.0.7
   loggy: ^2.0.3
   google_mobile_ads: ^5.1.0
+  internet_connection_checker: ^1.0.0+1
 
 dev_dependencies:
   flutter_test:
