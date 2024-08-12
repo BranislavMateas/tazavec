@@ -123,6 +123,7 @@ class _HomePageState extends State<HomePage> with UiLoggy {
                 });
 
                 groqChat.switchModel(value);
+                isFirst = true;
                 loggy.info("Switching chat model: $targetModel");
               },
               itemBuilder: (BuildContext context) {
@@ -221,6 +222,7 @@ class _HomePageState extends State<HomePage> with UiLoggy {
 
   Widget _buildTextField() {
     return TextField(
+      maxLength: 60,
       focusNode: focusNode,
       style: const TextStyle(
         fontSize: 14,
