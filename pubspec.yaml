@@ -3,7 +3,7 @@ description: "Tazavec offers a fun way to break the ice and start meaningful con
 
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 
-version: 1.0.1+2
+version: 1.0.1+4
 
 environment:
   sdk: '>=3.4.3 <4.0.0'
