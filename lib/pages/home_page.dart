@@ -87,7 +87,7 @@ class _HomePageState extends State<HomePage> with UiLoggy {
 
   void _createInitialAnimation() async {
     WidgetsBinding.instance.addPostFrameCallback((_) async{
-      String targetMessage = "Hey! I am Tazavec! Ready to get each other deeper?";
+      String targetMessage = "Hey! I am Tazavec! Ready to get to know each other deeper?";
       List<String> words = targetMessage.split(' ');
 
       for (final word in words) {
@@ -128,7 +128,14 @@ class _HomePageState extends State<HomePage> with UiLoggy {
                 return availableModels.map((String model) {
                   return PopupMenuItem<String>(
                     value: model,
-                    child: Text(model),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(model),
+                        if (model == targetModel) const SizedBox(width: 4),
+                        if (model == targetModel) const Icon(Icons.check),
+                      ],
+                    ),
                   );
                 }).toList();
               },
