@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:groq_sdk/groq_sdk.dart';
 import 'package:internet_connection_checker/internet_connection_checker.dart';
 import 'package:loggy/loggy.dart';
@@ -125,35 +127,7 @@ class _HomePageState extends State<HomePage> with UiLoggy {
                 showDialog(
                   context: context,
                   builder: (c) {
-                    return AlertDialog(
-                      title: const Text("Are you sure you want to change the model?"),
-                      content: Text(
-                        "New model: $value\n\nNote: Changing the model will restart the chat - some of the question may therefore repeat.",
-                      ),
-                      actions: [
-                        TextButton(
-                          child: const Text("No"),
-                          onPressed: () {
-                            Navigator.of(c).pop();
-                          },
-                        ),
-                        TextButton(
-                          child: const Text("Yes"),
-                          onPressed: () {
-                            setState(() {
-                              targetModel = value;
-                            });
-
-                            groqChat = groqModel.startNewChat(targetModel);
-                            _startGroqStream();
-                            isFirst = true;
-
-                            loggy.info("Switching chat model: $targetModel");
-                            Navigator.of(c).pop();
-                          },
-                        ),
-                      ],
-                    );
+                    return _renderChangeModelDialog(value, c);
                   },
                 );
               },
@@ -195,15 +169,20 @@ class _HomePageState extends State<HomePage> with UiLoggy {
               children: <Widget>[
                 Expanded(
                   child: SingleChildScrollView(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Text(
-                        questionText,
-                        textAlign: TextAlign.left,
-                        style: TextStyle(
-                          fontSize: 28,
-                          fontWeight: FontWeight.w900,
-                          color: Theme.of(context).colorScheme.onSurface,
+                    child: InkWell(
+                      onLongPress: () async {
+                        await Clipboard.setData(ClipboardData(text: questionText));
+                      },
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Text(
+                          questionText,
+                          textAlign: TextAlign.left,
+                          style: TextStyle(
+                            fontSize: 28,
+                            fontWeight: FontWeight.w900,
+                            color: Theme.of(context).colorScheme.onSurface,
+                          ),
                         ),
                       ),
                     ),
@@ -220,6 +199,38 @@ class _HomePageState extends State<HomePage> with UiLoggy {
           ),
         ),
       ),
+    );
+  }
+
+  AlertDialog _renderChangeModelDialog(String value, BuildContext c) {
+    return AlertDialog(
+      title: const Text("Are you sure you want to change the model?"),
+      content: Text(
+        "New model: $value\n\nNote: Changing the model will restart the chat - some of the question may therefore repeat.",
+      ),
+      actions: [
+        TextButton(
+          child: const Text("No"),
+          onPressed: () {
+            Navigator.of(c).pop();
+          },
+        ),
+        TextButton(
+          child: const Text("Yes"),
+          onPressed: () {
+            setState(() {
+              targetModel = value;
+            });
+    
+            groqChat = groqModel.startNewChat(targetModel);
+            _startGroqStream();
+            isFirst = true;
+    
+            loggy.info("Switching chat model: $targetModel");
+            Navigator.of(c).pop();
+          },
+        ),
+      ],
     );
   }
 
