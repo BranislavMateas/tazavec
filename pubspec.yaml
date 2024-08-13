@@ -3,7 +3,7 @@ description: "Tazavec offers a fun way to break the ice and start meaningful con
 
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 
-version: 1.0.2+5
+version: 1.0.2+6
 
 environment:
   sdk: '>=3.4.3 <4.0.0'
@@ -17,6 +17,7 @@ dependencies:
   loggy: ^2.0.3
   google_mobile_ads: ^5.1.0
   internet_connection_checker: ^1.0.0+1
+  device_info_plus: ^10.1.2
 
 dev_dependencies:
   flutter_test:

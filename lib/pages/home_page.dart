@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:groq_sdk/groq_sdk.dart';
@@ -172,6 +173,12 @@ class _HomePageState extends State<HomePage> with UiLoggy {
                     child: InkWell(
                       onLongPress: () async {
                         await Clipboard.setData(ClipboardData(text: questionText));
+
+                        if (await _androidVersionIs12OrLower() && context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text("Copied to clipboard!")),
+                          );
+                        }
                       },
                       child: Padding(
                         padding: const EdgeInsets.all(16.0),
@@ -337,5 +344,15 @@ class _HomePageState extends State<HomePage> with UiLoggy {
     await groqChat.sendMessage(prompt);
 
     isFirst = false;
+  }
+
+  Future<bool> _androidVersionIs12OrLower() async {
+    final DeviceInfoPlugin deviceInfo = DeviceInfoPlugin();
+    final androidInfo = await deviceInfo.androidInfo;
+    final sdkInt = androidInfo.version.sdkInt;
+
+    loggy.info("API SDK version: $sdkInt");
+
+    return sdkInt <= 31;
   }
 }
