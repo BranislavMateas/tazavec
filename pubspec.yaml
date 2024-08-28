@@ -3,7 +3,7 @@ description: "Tazavec offers a fun way to break the ice and start meaningful con
 
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 
-version: 1.0.2+6
+version: 1.0.3+7
 
 environment:
   sdk: '>=3.4.3 <4.0.0'
@@ -12,12 +12,15 @@ dependencies:
   flutter:
     sdk: flutter
 
-  cupertino_icons: ^1.0.6
-  groq_sdk: ^0.0.7
+  groq_sdk:
+    git:
+      url: https://github.com/BranislavMateas/groq-dart-sdk.git
+
   loggy: ^2.0.3
   google_mobile_ads: ^5.1.0
   internet_connection_checker: ^1.0.0+1
   device_info_plus: ^10.1.2
+  url_launcher: ^6.3.0
 
 dev_dependencies:
   flutter_test:

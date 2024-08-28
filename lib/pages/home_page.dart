@@ -11,6 +11,7 @@ import 'package:tazavec/ads/interstitial_ad_service.dart';
 import 'package:tazavec/ai/models.dart';
 import 'package:tazavec/main.dart';
 import 'package:tazavec/ai/prompts.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -120,6 +121,11 @@ class _HomePageState extends State<HomePage> with UiLoggy {
       top: false,
       child: Scaffold(
         appBar: AppBar(
+          leading: IconButton(
+            tooltip: "Support Tazavec",
+            onPressed: () async => await _launchSupport(),
+            icon: const Icon(Icons.monetization_on),
+          ),
           actions: [
             PopupMenuButton<String>(
               icon: const Icon(Icons.more_vert),
@@ -276,13 +282,21 @@ class _HomePageState extends State<HomePage> with UiLoggy {
       style: const TextStyle(
         fontSize: 14,
       ),
-      decoration: const InputDecoration(
-        contentPadding: EdgeInsets.symmetric(horizontal: 20),
-        border: OutlineInputBorder(
+      decoration: InputDecoration(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 20),
+        focusedBorder: OutlineInputBorder(
+          borderSide: BorderSide(
+            width: 3,
+            color: Theme.of(context).colorScheme.primary,
+          ),
+          borderRadius: const BorderRadius.all(Radius.circular(50)),
+        ),
+        enabledBorder: const OutlineInputBorder(
+          borderSide: BorderSide(width: 2),
           borderRadius: BorderRadius.all(Radius.circular(50)),
         ),
         hintText: "Enter topic or occasion... (Optional)",
-        hintStyle: TextStyle(
+        hintStyle: const TextStyle(
           fontSize: 14,
         ),
       ),
@@ -354,5 +368,16 @@ class _HomePageState extends State<HomePage> with UiLoggy {
     loggy.info("API SDK version: $sdkInt");
 
     return sdkInt <= 31;
+  }
+
+  Future<void> _launchSupport() async {
+    Uri url = Uri.parse("https://buymeacoffee.com/braniq");
+
+    if (!await launchUrl(url)) {
+      loggy.error('Could not launch $url');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Could not launch $url!")),
+      );
+    }
   }
 }
