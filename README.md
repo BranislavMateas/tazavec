@@ -7,6 +7,11 @@ It is supposed to create ice-breakers between two people or more by generating q
 Try it now!
 
 ---
+### You can support the project on:
+
+[!["Buy Me A Coffee"](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://buymeacoffee.com/braniq)
+
+---
 
 ## Prerequisites
 
