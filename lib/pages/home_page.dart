@@ -124,7 +124,7 @@ class _HomePageState extends State<HomePage> with UiLoggy {
           leading: IconButton(
             tooltip: "Support Tazavec",
             onPressed: () async => await _launchSupport(),
-            icon: const Icon(Icons.monetization_on),
+            icon: const Icon(Icons.coffee),
           ),
           actions: [
             PopupMenuButton<String>(
@@ -252,7 +252,7 @@ class _HomePageState extends State<HomePage> with UiLoggy {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          "Select the DEEPNESS level:".toUpperCase(),
+          "Select the DEPTH level:".toUpperCase(),
           style: TextStyle(
             fontSize: 14,
             color: Theme.of(context).colorScheme.secondary,
